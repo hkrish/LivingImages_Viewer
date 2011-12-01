@@ -3,14 +3,9 @@
  */
 package livingimagesviewer;
 
-import java.awt.AlphaComposite;
-import java.awt.Graphics2D;
 import java.awt.Rectangle;
-import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
-import java.awt.image.renderable.ParameterBlock;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.PriorityQueue;
@@ -24,7 +19,6 @@ import processing.core.PApplet;
 import processing.core.PConstants;
 import processing.core.PGraphics;
 import processing.core.PImage;
-import sun.java2d.loops.DrawLine;
 import toxi.geom.Vec2D;
 
 /**
@@ -47,32 +41,28 @@ public class LiveImage {
 		Marker marker = null;
 		PImage image = null;
 		
-		boolean base = false;
-		
 		Date dateTime = null;
 		
 		/**
 		 * 
 		 */
-		public ImageLayer(BaseImage bimg, Marker m, boolean b) {
-			if (bimg != null && m != null) {
-				//				this.bImage = bimg;
-				this.marker = m;
-				
-				base = b;
-				dateTime = BaseImage.getDateTime(bimg);
-				loadImage();
-			}
-		}
+		//		public ImageLayer(BaseImage bimg, Marker m) {
+		//			if (bimg != null && m != null) {
+		//				//				this.bImage = bimg;
+		//				this.marker = m;
+		//				
+		//				dateTime = BaseImage.getDateTime(bimg);
+		//				loadImage();
+		//			}
+		//		}
 		
-		public ImageLayer(BaseImage bimg, String name, boolean b) {
+		public ImageLayer(BaseImage bimg, String name) {
 			if (bimg != null && !name.equals("")) {
 				//				this.bImage = bimg;
 				for (Marker m : bimg.markers)
 					if (m.name.equalsIgnoreCase(name))
 						this.marker = m;
 				
-				base = b;
 				dateTime = BaseImage.getDateTime(bimg);
 				loadImage();
 			}
@@ -109,9 +99,8 @@ public class LiveImage {
 	 * 
 	 */
 	private class ImageLayerList extends PriorityQueue<ImageLayer> {
-		/**
-		 * 
-		 */
+		private static final long serialVersionUID = 5655367429632009938L;
+		
 		public ImageLayerList() {
 			super();
 		}
@@ -124,18 +113,15 @@ public class LiveImage {
 	private float baseImageScale = 1f;
 	// All the persons in this image
 	ArrayList<Person> persons = null;
-	
 	private ImageLayerList images = null;
 	private ArrayList<Marker> markers = null;
 	
 	private boolean anim = false;
-	private float animfactor = 0f, animstep = 0.05f, zoomx = 480, zoomy = 270;
+	private float animfactor = 0f, animstep = 0.01f, zoomx = 480, zoomy = 270;
 	public static final int SKIP = 0;
 	public static final int CROSSFADE = 1;
 	public static final int ADDBLEND = 2;
 	public static final int ZOOMFADE = 3;
-	private Graphics2D g2d;
-	
 	private Date baseDateTime = null, lastDateTime = null, currentTime = null;
 	
 	private Object currentImage = null, nextImage = null;
@@ -144,7 +130,6 @@ public class LiveImage {
 	
 	private int binCount = 256;
 	
-	private Calendar cal = Calendar.getInstance();
 	private PGraphics pg = null;
 	
 	/**
@@ -164,6 +149,7 @@ public class LiveImage {
 			this.baseDateTime = BaseImage.getDateTime(this.baseImage);
 			this.pg = pg;
 			this.baseImageScale = getScaleFactor();
+			System.out.println(this.baseImageScale);
 			this.currentImage = baseImage;
 			
 			persons = new ArrayList<Person>();
@@ -193,7 +179,7 @@ public class LiveImage {
 					if (bimg.getFilename().equalsIgnoreCase(baseImage.getFilename())) {
 						//						imgl = new ImageLayer(bimg, p.name, true);
 					} else {
-						imgl = new ImageLayer(bimg, p.name, false);
+						imgl = new ImageLayer(bimg, p.name);
 						if (imgl.marker.sample != null) {
 							if (imgl.dateTime.before(mind))
 								mind = (Date) imgl.dateTime.clone();
@@ -214,95 +200,120 @@ public class LiveImage {
 		}
 	}
 	
-	//	public void draw(PGraphics pg) {
-	//		if (markers == null || markers.isEmpty())
-	//			return;
+	//	private void animEnd() {
+	//		anim = false;
+	//		current = nextimage;
 	//		
-	//		Marker m;
-	//		Float sf = 0f;
+	//		pg.tint(255, 255);
+	//		drawBase();
+	//		pg.image(images[current], 0, 0);
+	//	}
+	//	
+	//	private void animRun(int type) {
+	//		if (animfactor >= 1f)
+	//			endAnim();
 	//		
-	//		//		pg.beginDraw();
-	//		pg.background(0);
-	//		
-	//		pg.pushMatrix();
-	//		// Scale image first
-	//		pg.scale(getScaleFactor(pg, baseImage));
-	//		pg.image(baseImage, 0, 0);
-	//		
-	//		for (ImageLayer il : images) {
-	//			m = getmarker(il.marker.name);
-	//			if (m == null)
-	//				continue;
+	//		if (anim && nextimage != current) {
+	//			switch (type) {
+	//			case CROSSFADE:
+	//				tint(255, 255);
+	//				image(images[0], 0, 0);
+	//				tint(255, (1 - animfactor) * 255);
+	//				image(images[current], 0, 0);
+	//				tint(255, animfactor * 255);
+	//				image(images[nextimage], 0, 0);
+	//				break;
 	//			
-	//			sf = m.fullrect.width / (float) il.marker.fullrect.width;
-	//			Vec2D tmpm = il.marker.center.sub(il.marker.fullrect.getTopLeft()).scale(sf);
-	//			pg.pushMatrix();
-	//			pg.translate(m.center.x - tmpm.x, m.center.y - tmpm.y);
-	//			pg.scale(sf);
-	//			pg.image(il.image, 0, 0);
-	//			pg.popMatrix();
+	//			case ADDBLEND:
+	//				float af = (animfactor <= 0.5f) ? map(animfactor, 0f, 0.5f, 0f, 1f) : map(animfactor - 0.5f, 0f, 0.5f, 1f, 0f);
+	//				g2d.setComposite(AlphaComposite.Src);
+	//				g2d.drawImage(images[0].getImage(), 0, 0, null);
+	//				g2d.setComposite(AlphaComposite.Src.derive(constrain(1 - animfactor, 0, 1)));
+	//				g2d.drawImage(images[current].getImage(), 0, 0, null);
+	//				g2d.setComposite(BlendComposite.Add.derive(constrain(af, 0, 1)));
+	//				g2d.drawImage(images[nextimage].getImage(), 0, 0, null);
+	//				g2d.setComposite(AlphaComposite.Src);
+	//				break;
 	//			
-	//			System.out.println(m.center.x + " , " + tmpm.x + " , " + (m.center.x - tmpm.x));
+	//			case ZOOMFADE:
+	//				tint(255, 255);
+	//				image(images[0], 0, 0);
+	//				
+	//				pushMatrix();
+	//				translate(zoomx, zoomy);
+	//				scale(1 + (float) Math.sin(animfactor * Math.PI / 2f));
+	//				translate(-zoomx, -zoomy);
+	//				tint(255, (1 - animfactor) * 255);
+	//				image(images[current], 0, 0);
+	//				popMatrix();
+	//				
+	//				tint(255, animfactor * 255);
+	//				image(images[nextimage], 0, 0);
+	//				break;
+	//			}
 	//		}
-	//		
-	//		pg.popMatrix();
-	//		//		pg.endDraw();
+	//		animfactor += animstep;
 	//	}
 	
-//	private void animEnd() {
-//		anim = false;
-//		current = nextimage;
-//		
-//		pg.tint(255, 255);
-//		drawBase();
-//		pg.image(images[current], 0, 0);
-//	}
-//	
-//	private void animRun(int type) {
-//		if (animfactor >= 1f)
-//			endAnim();
-//		
-//		if (anim && nextimage != current) {
-//			switch (type) {
-//			case CROSSFADE:
-//				tint(255, 255);
-//				image(images[0], 0, 0);
-//				tint(255, (1 - animfactor) * 255);
-//				image(images[current], 0, 0);
-//				tint(255, animfactor * 255);
-//				image(images[nextimage], 0, 0);
-//				break;
-//			
-//			case ADDBLEND:
-//				float af = (animfactor <= 0.5f) ? map(animfactor, 0f, 0.5f, 0f, 1f) : map(animfactor - 0.5f, 0f, 0.5f, 1f, 0f);
-//				g2d.setComposite(AlphaComposite.Src);
-//				g2d.drawImage(images[0].getImage(), 0, 0, null);
-//				g2d.setComposite(AlphaComposite.Src.derive(constrain(1 - animfactor, 0, 1)));
-//				g2d.drawImage(images[current].getImage(), 0, 0, null);
-//				g2d.setComposite(BlendComposite.Add.derive(constrain(af, 0, 1)));
-//				g2d.drawImage(images[nextimage].getImage(), 0, 0, null);
-//				g2d.setComposite(AlphaComposite.Src);
-//				break;
-//			
-//			case ZOOMFADE:
-//				tint(255, 255);
-//				image(images[0], 0, 0);
-//				
-//				pushMatrix();
-//				translate(zoomx, zoomy);
-//				scale(1 + (float) Math.sin(animfactor * Math.PI / 2f));
-//				translate(-zoomx, -zoomy);
-//				tint(255, (1 - animfactor) * 255);
-//				image(images[current], 0, 0);
-//				popMatrix();
-//				
-//				tint(255, animfactor * 255);
-//				image(images[nextimage], 0, 0);
-//				break;
-//			}
-//		}
-//		animfactor += animstep;
-//	}
+	private void animEnd() {
+		anim = false;
+		currentImage = nextImage;
+		
+		pg.tint(255, 255);
+		drawImage(baseImage);
+		drawImage(currentImage);
+	}
+	
+	private void animRun(int type) {
+		if (animfactor >= 1f)
+			animEnd();
+		
+		if (anim && nextImage != null && currentImage != null) {
+			switch (type) {
+			case CROSSFADE:
+				pg.tint(255, 255);
+				drawImage(baseImage);
+				if (currentImage != baseImage) {
+					pg.tint(255, (1 - animfactor) * 255);
+					drawImage(currentImage);
+				}
+				pg.tint(255, animfactor * 255);
+				drawImage(nextImage);
+				break;
+			
+			//			case ADDBLEND:
+			//				float af = (animfactor <= 0.5f) ? map(animfactor, 0f, 0.5f, 0f, 1f) : map(animfactor - 0.5f, 0f, 0.5f, 1f, 0f);
+			//				g2d.setComposite(AlphaComposite.Src);
+			//				g2d.drawImage(images[0].getImage(), 0, 0, null);
+			//				g2d.setComposite(AlphaComposite.Src.derive(constrain(1 - animfactor, 0, 1)));
+			//				g2d.drawImage(images[current].getImage(), 0, 0, null);
+			//				g2d.setComposite(BlendComposite.Add.derive(constrain(af, 0, 1)));
+			//				g2d.drawImage(images[nextimage].getImage(), 0, 0, null);
+			//				g2d.setComposite(AlphaComposite.Src);
+			//				break;
+			//			
+			case ZOOMFADE:
+				pg.tint(255, 255);
+				drawImage(baseImage);
+				
+				if (currentImage != baseImage) 
+				{
+					pg.pushMatrix();
+					pg.translate(zoomx, zoomy);
+					pg.scale(1 + (float) Math.sin(animfactor * Math.PI / 2f));
+					pg.translate(-zoomx, -zoomy);
+					pg.tint(255, (1 - animfactor) * 255);
+					drawImage(currentImage);
+					pg.popMatrix();
+				}
+				
+				pg.tint(255, animfactor * 255);
+				drawImage(nextImage);
+				break;
+			}
+		}
+		animfactor += animstep;
+	}
 	
 	private void animStart() {
 		animfactor = 0f;
@@ -313,27 +324,14 @@ public class LiveImage {
 		if (markers == null || markers.isEmpty())
 			return;
 		
-		pg.background(0);
-		drawImage(baseImage);
-		
-		// TODO Update according to currentT value
-		if (currentT > 0) {
-			for (ImageLayer il : images) {
-				if (il.dateTime.after(currentTime))
-					break;
-				
-				drawImage(il);
-			}
-		}
+		animRun(ZOOMFADE);
 	}
 	
 	private void drawImage(Object img) {
 		pg.pushMatrix();
 		pg.scale(baseImageScale);
 		
-		if (img.getClass().equals(BaseImage.class))
-			pg.image((PImage) img, 0, 0);
-		else {
+		if (img.getClass().equals(ImageLayer.class)) {
 			ImageLayer il = (ImageLayer) img;
 			Marker m = getmarker(il.marker.name);
 			if (m == null)
@@ -346,7 +344,8 @@ public class LiveImage {
 			pg.scale(sf);
 			pg.image(il.image, 0, 0);
 			pg.popMatrix();
-		}
+		} else
+			pg.image((PImage) img, 0, 0);
 		
 		pg.popMatrix();
 	}
@@ -373,6 +372,7 @@ public class LiveImage {
 		ROIShape roi = new ROIShape(new Rectangle(0, 0, img.getWidth(), img.getHeight()));
 		
 		// Create the histogram op.
+		@SuppressWarnings("deprecation")
 		RenderedOp histImage = JAI.create("histogram", img, hist, roi, new Integer(1), new Integer(1));
 		
 		// Retrieve the histogram.
@@ -419,6 +419,7 @@ public class LiveImage {
 		ROIShape roi = new ROIShape(new Rectangle(0, 0, img.getWidth(), img.getHeight()));
 		
 		// Create the histogram op.
+		@SuppressWarnings("deprecation")
 		RenderedOp histImage = JAI.create("histogram", img, hist, roi, new Integer(1), new Integer(1));
 		
 		return histImage;
@@ -479,9 +480,14 @@ public class LiveImage {
 				if (il.dateTime.after(currentTime))
 					break;
 				
-				nextImage = il.image;
+				nextImage = il;
 			}
 		}
+		
+		if (nextImage == null)
+			nextImage = baseImage;
+		
+		animStart();
 	}
 	
 }
